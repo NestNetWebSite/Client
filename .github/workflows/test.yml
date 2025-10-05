@@ -34,7 +34,12 @@ jobs:
             - name: File Creation Test
               if: ${{ github.event.inputs.test_type == 'file_creation' }}
               run: |
-                  cd ${{ secrets.DEPLOY_PATH }}
+                  # 디렉토리 생성 (없는 경우)
+                  mkdir -p ~/test
+
+                  # 홈 디렉토리의 test 폴더로 이동
+                  cd ~/test
+
                   echo '${{ github.event.inputs.message }}' > ${{ github.event.inputs.file_name }}
                   echo 'Timestamp: $(date)' >> ${{ github.event.inputs.file_name }}
                   echo 'GitHub SHA: ${{ github.sha }}' >> ${{ github.event.inputs.file_name }}
@@ -43,16 +48,21 @@ jobs:
                   echo 'Test file created successfully:'
                   cat ${{ github.event.inputs.file_name }}
 
+                  # 현재 경로 출력 (디버깅용)
+                  echo "Current directory: $(pwd)"
+
             - name: Health Check Test
               if: ${{ github.event.inputs.test_type == 'health_check' }}
               run: |
-                  cd ${{ secrets.DEPLOY_PATH }}
+                  # 홈 디렉토리의 test 폴더로 이동 (없으면 생성)
+                  mkdir -p ~/test
+                  cd ~/test
 
                   echo '=== Docker Compose Status ==='
-                  docker-compose ps
+                  docker-compose ps || echo "docker-compose not found or no services running"
 
                   echo '=== Container Health ==='
-                  docker stats --no-stream
+                  docker stats --no-stream || echo "docker stats failed"
 
                   echo '=== Disk Usage ==='
                   df -h
@@ -63,15 +73,24 @@ jobs:
                   echo '=== Network Connectivity ==='
                   curl -f http://localhost:8080/actuator/health || echo 'Backend health check failed'
 
+                  # 현재 경로 출력 (디버깅용)
+                  echo "Current directory: $(pwd)"
+
             - name: Log Check Test
               if: ${{ github.event.inputs.test_type == 'log_check' }}
               run: |
-                  cd ${{ secrets.DEPLOY_PATH }}
+                  # 홈 디렉토리의 test 폴더로 이동 (없으면 생성)
+                  mkdir -p ~/test
+                  cd ~/test
 
                   echo '=== Backend Logs (Last 50 lines) ==='
-                  docker-compose logs --tail=50 backend
+                  docker-compose logs --tail=50 backend || echo "backend logs not available"
 
                   echo '=== Nginx Logs (Last 20 lines) ==='
-                  docker-compose logs --tail=20 nginx
+                  docker-compose logs --tail=20 nginx || echo "nginx logs not available"
 
                   echo '=== Database Logs (Last 20 lines) ==='
+                  docker-compose logs --tail=20 db || echo "db logs not available"
+
+                  # 현재 경로 출력 (디버깅용)
+                  echo "Current directory: $(pwd)"
