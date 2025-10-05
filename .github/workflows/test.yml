@@ -25,73 +25,53 @@ on:
 jobs:
     test-operations:
         name: Test Server Operations
-        runs-on: ubuntu-latest
+        runs-on: self-hosted
 
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            - name: Setup SSH
-              uses: webfactory/ssh-agent@v0.9.0
-              with:
-                  ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-            - name: Setup SSH and disable host key checking
-              run: |
-                  mkdir -p ~/.ssh
-                  echo "Host ${{ secrets.SERVER_HOST }}" >> ~/.ssh/config
-                  echo "  StrictHostKeyChecking no" >> ~/.ssh/config
-                  echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
-                  chmod 600 ~/.ssh/config
-
             - name: File Creation Test
               if: ${{ github.event.inputs.test_type == 'file_creation' }}
               run: |
-                  ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "
-                    cd ${{ secrets.DEPLOY_PATH }}
-                    echo '${{ github.event.inputs.message }}' > ${{ github.event.inputs.file_name }}
-                    echo 'Timestamp: $(date)' >> ${{ github.event.inputs.file_name }}
-                    echo 'GitHub SHA: ${{ github.sha }}' >> ${{ github.event.inputs.file_name }}
-                    echo 'Created by: GitHub Actions' >> ${{ github.event.inputs.file_name }}
-                    
-                    echo 'Test file created successfully:'
-                    cat ${{ github.event.inputs.file_name }}
-                  "
+                  cd ${{ secrets.DEPLOY_PATH }}
+                  echo '${{ github.event.inputs.message }}' > ${{ github.event.inputs.file_name }}
+                  echo 'Timestamp: $(date)' >> ${{ github.event.inputs.file_name }}
+                  echo 'GitHub SHA: ${{ github.sha }}' >> ${{ github.event.inputs.file_name }}
+                  echo 'Created by: GitHub Actions (Self-hosted)' >> ${{ github.event.inputs.file_name }}
+
+                  echo 'Test file created successfully:'
+                  cat ${{ github.event.inputs.file_name }}
 
             - name: Health Check Test
               if: ${{ github.event.inputs.test_type == 'health_check' }}
               run: |
-                  ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "
-                    cd ${{ secrets.DEPLOY_PATH }}
-                    
-                    echo '=== Docker Compose Status ==='
-                    docker-compose ps
-                    
-                    echo '=== Container Health ==='
-                    docker stats --no-stream
-                    
-                    echo '=== Disk Usage ==='
-                    df -h
-                    
-                    echo '=== Memory Usage ==='
-                    free -h
-                    
-                    echo '=== Network Connectivity ==='
-                    curl -f http://localhost:8080/actuator/health || echo 'Backend health check failed'
-                  "
+                  cd ${{ secrets.DEPLOY_PATH }}
+
+                  echo '=== Docker Compose Status ==='
+                  docker-compose ps
+
+                  echo '=== Container Health ==='
+                  docker stats --no-stream
+
+                  echo '=== Disk Usage ==='
+                  df -h
+
+                  echo '=== Memory Usage ==='
+                  free -h
+
+                  echo '=== Network Connectivity ==='
+                  curl -f http://localhost:8080/actuator/health || echo 'Backend health check failed'
 
             - name: Log Check Test
               if: ${{ github.event.inputs.test_type == 'log_check' }}
               run: |
-                  ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "
-                    cd ${{ secrets.DEPLOY_PATH }}
-                    
-                    echo '=== Backend Logs (Last 50 lines) ==='
-                    docker-compose logs --tail=50 backend
-                    
-                    echo '=== Nginx Logs (Last 20 lines) ==='
-                    docker-compose logs --tail=20 nginx
-                    
-                    echo '=== Database Logs (Last 20 lines) ==='
-                    docker-compose logs --tail=20 db
-                  "
+                  cd ${{ secrets.DEPLOY_PATH }}
+
+                  echo '=== Backend Logs (Last 50 lines) ==='
+                  docker-compose logs --tail=50 backend
+
+                  echo '=== Nginx Logs (Last 20 lines) ==='
+                  docker-compose logs --tail=20 nginx
+
+                  echo '=== Database Logs (Last 20 lines) ==='
