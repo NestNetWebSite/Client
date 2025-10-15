@@ -34,7 +34,6 @@ export default function PrivateLayout() {
                 >
                     <Outlet />
                 </Suspense>
-                <Outlet />
             </ErrorBoundary>
         </>
     );
